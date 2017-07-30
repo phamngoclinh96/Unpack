@@ -1,0 +1,100 @@
+How To Unpack FSG 1.xx - 2.xx
+================================================================================
+Author        : BytePtr <byteptr2k3@yahoo.fr>
+Protection    : FSG
+Level         : easy
+Tools         : OllyDbg, ImpRec
+Attached files: unpackmes
+OS	      : Win98
+================================================================================
+27.10.2004
+
+- "unpackme- FSG 1.31 - dulek":
+
+Let's Go:
+--------------------------------------------------------------------------------
+  To manual unpack FSG is a piece of cake .. you have only to find FSG's signature
+the other parts comes automatically :)
+
+FSG 1.31 :
+==========
+00478068   BB C7804700      MOV EBX,<&KERNEL32.LoadLibraryA>   <--- signature
+0047806D   47               INC EDI
+0047806E   8B37             MOV ESI,DWORD PTR DS:[EDI]
+00478070   AF               SCAS DWORD PTR ES:[EDI]
+00478071   57               PUSH EDI
+00478072   FF13             CALL DWORD PTR DS:[EBX]
+00478074   95               XCHG EAX,EBP
+00478075   33C0             XOR EAX,EAX
+00478077   AE               SCAS BYTE PTR ES:[EDI]
+00478078  ^75 FD            JNZ SHORT UNPACKME.00478077
+0047807A   FE0F             DEC BYTE PTR DS:[EDI]
+0047807C  ^74 EF            JE SHORT UNPACKME.0047806D
+0047807E   FE0F             DEC BYTE PTR DS:[EDI]
+00478080   75 06            JNZ SHORT UNPACKME.00478088
+00478082   47               INC EDI
+00478083   FF37             PUSH DWORD PTR DS:[EDI]
+00478085   AF               SCAS DWORD PTR ES:[EDI]
+00478086   EB 09            JMP SHORT UNPACKME.00478091
+00478088   FE0F             DEC BYTE PTR DS:[EDI]
+0047808A  -0F84 7082FCFF    JE UNPACKME.00440300             <---- the OEP : (00440300 - 00400000)
+
+
+ Now open our target with OllyDbg .... scroll down till you find the signature ... we have to put
+a breakpoint before the jump to the entry Point ... JE UNPACKME.00440300 is not executed until
+all the imports are loaded ( DEC BYTE PTR DS:[EDI]=0) .. so imagine if there is many imports ;)
+an easy way is to put a conditional breakpoint on that jump (JE UNPACKME.00440300):
+we will say to Olly to break when (DEC BYTE PTR DS:[EDI]==0) .... How?
+press shift+F2 an edit the condition DEC BYTE PTR DS:[EDI]==0 ... now Press F9 ... damn it ...it
+works :) ... olly break ... press F8 one time ... we will got somthing like that:
+
+00440300     55             DB 55                                    ;  CHAR 'U'
+00440301     8B             DB 8B
+00440302     EC             DB EC
+00440303     83             DB 83
+00440304     C4             DB C4
+00440305     F4             DB F4
+00440306     B8             DB B8
+00440307     C0             DB C0
+00440308     01             DB 01
+00440309     44             DB 44                                    ;  CHAR 'D'
+0044030A     00             DB 00
+0044030B     E8             DB E8
+
+press ctrl+A to analyse it ... and then (plugins --> OllyDump --> Dump debugged..) don't check
+rebuild import...we will do it with ImpRec...you have only to select the target..change the OEP
+to 40300 and get the Import and fix your unpacked file ;) .. FSG v1.31 now is a part of the past.
+
+
+- "unpackme- FSG 1.33 - dulek":
+-------------------------------------------------------------------------------------------------
+
+0047804A  ^74 F0            JE SHORT UNPACKME.0047803C  --\    
+0047804C   79 05            JNS SHORT UNPACKME.00478053 ---\-----> signature 1
+0047804E   46               INC ESI                     
+0047804F   AD               LODS DWORD PTR DS:[ESI]
+00478050   50               PUSH EAX                    --\
+00478051   EB 09            JMP SHORT UNPACKME.0047805C ---\----> signature 2
+00478053   FE0E             DEC BYTE PTR DS:[ESI]
+00478055  -0F84 A582FCFF    JE UNPACKME.00440300	   ----> jmp to OEP
+
+PS: Conditional BreakPoint needed
+
+
+- "unpackme- FSG 2.0 - bart":
+-------------------------------------------------------------------------------------------------
+
+004001CD  ^78 F3            JS SHORT UNPACKME.004001C2  \
+004001CF   75 03            JNZ SHORT UNPACKME.004001D4  }-----> signature
+004001D1   FF63 0C          JMP DWORD PTR DS:[EBX+C]    /
+                                    \
+                                     \---------------------------> jmp to OEP
+
+PS: we will not need conditional bpx in this case ... you have only to put an ordinary bpx F2
+
+=================================================================================================
+I want to thank ex-members of e!, members of Seek n'Destroy, members of TBE for their sympathy
+
+                   ---======{ We WiLL NeVer STop LiviNg This Way }=======------
+
+                                            EOF
